@@ -4,7 +4,12 @@
   "description": "exchange platforms parser",
   "private": true,
   "scripts": {
-    "start": "tsc && node dist/main.js",
+    "start": "npm run build && npm run start:list && npm run start:crawl",
+    "start:list": "node dist/apps/list/main.js",
+    "start:crawl": "node dist/apps/crawler/main.js",
+    "dev:list": "npm run build && node dist/apps/list/main.js",
+    "dev:crawl": "npm run build && node dist/apps/crawler/main.js",
+    "build": "tsc",
     "lint": "eslint . --ext .ts"
   },
   "devDependencies": {
