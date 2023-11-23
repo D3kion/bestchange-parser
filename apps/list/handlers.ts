@@ -1,5 +1,5 @@
 import type { ElementHandle, Page } from "puppeteer";
-import type { ExchangerData } from "../../lib/domain";
+import type { Exchanger } from "../../lib/domain";
 
 export async function clickOriginCurrency(
   page: Page,
@@ -30,8 +30,8 @@ export async function getExchangersForPair(
   page: Page,
   originName: string,
   targetName: string
-): Promise<ExchangerData[]> {
-  const exchangers = new Map<string, ExchangerData>();
+): Promise<Exchanger[]> {
+  const exchangers = new Map<string, Exchanger>();
   // Iterate over exchangers and save them
   const content = await page.$$(`#content_table tbody tr`);
   for (const row of content) {

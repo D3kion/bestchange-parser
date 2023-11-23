@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import puppeteer from "puppeteer";
 
-import type { ExchangerData } from "../../lib/domain";
+import type { Exchanger } from "../../lib/domain";
 import {
   clickOriginCurrency,
   getExchangersForPair,
@@ -12,7 +12,7 @@ const SOURCE_SITE = "https://bestchange.ru/";
 const ORIGIN_CURRENCIES = ["Tether TRC20"];
 
 async function main() {
-  const exchangers: ExchangerData[] = [];
+  const exchangers: Exchanger[] = [];
 
   console.log("Opening browser");
   const browser = await puppeteer.launch({ headless: "new" });

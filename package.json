@@ -4,11 +4,10 @@
   "description": "exchange platforms parser",
   "private": true,
   "scripts": {
-    "start": "npm run build && npm run start:list && npm run start:crawl",
     "start:list": "node dist/apps/list/main.js",
-    "start:crawl": "node dist/apps/crawler/main.js",
+    "start:contacts": "node dist/apps/contacts/main.js",
     "dev:list": "npm run build && node dist/apps/list/main.js",
-    "dev:crawl": "npm run build && node dist/apps/crawler/main.js",
+    "dev:contacts": "npm run build && node dist/apps/contacts/main.js",
     "build": "tsc",
     "lint": "eslint . --ext .ts"
   },
@@ -20,6 +19,8 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",
-    "puppeteer": "^21.5.2"
+    "puppeteer": "^21.5.2",
+    "ts-retry": "^4.2.4",
+    "type-flag": "^3.0.0"
   }
 }
