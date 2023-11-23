@@ -1,9 +1,14 @@
 import "dotenv/config";
-import { GoogleSpreadsheet } from "google-spreadsheet";
+import {
+  GoogleSpreadsheet,
+  GoogleSpreadsheetWorksheet,
+} from "google-spreadsheet";
 import { JWT } from "google-auth-library";
+import { Exchanger } from "../../lib/domain";
 import { readExchangers } from "../../lib/db";
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
+const COLUMNS = ["Exchanger", "Pairs", "Site", "Contacts"];
 
 async function main() {
   if (
@@ -23,42 +28,42 @@ async function main() {
   const doc = new GoogleSpreadsheet(process.env.SPREADSHEET_ID, authToken);
   await doc.loadInfo();
 
+  const exchangers = await readExchangers(process.env.REPORT_FILE);
+  // Write exchangers with telegram
   const sheetTg = doc.sheetsByIndex[0];
-  sheetTg.setHeaderRow(["Exchanger", "Pairs", "Site", "Contacts"]);
+  sheetTg.setHeaderRow(COLUMNS);
   sheetTg.clearRows();
 
-  const exchangers = await readExchangers(process.env.REPORT_FILE);
   const tgExchangers = exchangers.filter((e) => !!e.tgContacts?.length);
   for (let i = 0; i < tgExchangers.length; i += 1000) {
-    sheetTg.addRows(
-      tgExchangers
-        .slice(i, i + 1000)
-        .map((e) => [
-          e.name,
-          e.pairs.map((p) => `${p[0]} - ${p[1]}`).join(", "),
-          e.url || "",
-          e.tgContacts?.join("\n") || "",
-        ])
-    );
+    writeChunk(sheetTg, tgExchangers.slice(i, i + 1000));
   }
 
+  // Write exchangers with emails
   const sheetEmail = doc.sheetsByIndex[1];
-  sheetEmail.setHeaderRow(["Exchanger", "Pairs", "Site", "Contacts"]);
+  sheetEmail.setHeaderRow(COLUMNS);
   sheetEmail.clearRows();
 
   const emailExchangers = exchangers.filter((e) => !!e.emailContacts?.length);
   for (let i = 0; i < emailExchangers.length; i += 1000) {
-    sheetEmail.addRows(
-      emailExchangers
-        .slice(i, i + 1000)
-        .map((e) => [
-          e.name,
-          e.pairs.map((p) => `${p[0]} - ${p[1]}`).join(", "),
-          e.url || "",
-          e.emailContacts?.join("\n") || "",
-        ])
-    );
+    writeChunk(sheetEmail, emailExchangers.slice(i, i + 1000));
   }
+}
+
+function writeChunk(
+  sheet: GoogleSpreadsheetWorksheet,
+  chunk: Exchanger[],
+  contactField: "tg" | "email" = "tg"
+) {
+  sheet.addRows(
+    chunk.map((e) => [
+      e.name,
+      e.pairs.map((p) => `${p[0]} - ${p[1]}`).join("\n"),
+      e.url || "",
+      (contactField === "tg" ? e.tgContacts : e.emailContacts)?.join("\n") ||
+        "",
+    ])
+  );
 }
 
 main();

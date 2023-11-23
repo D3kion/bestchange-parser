@@ -19,10 +19,7 @@ async function main() {
   await page.setViewport({ width: 1360, height: 768 });
 
   for (const item of exchangers) {
-    if (
-      item.url
-      // && (item.tgContacts?.length || item.emailContacts?.length)
-    ) {
+    if (item.url && (item.tgContacts?.length || item.emailContacts?.length)) {
       console.log(`Skiping "${item.name}" exchanger`);
       continue;
     }

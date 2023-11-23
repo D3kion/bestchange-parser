@@ -12,7 +12,7 @@ const SOURCE_SITE = "https://bestchange.ru/";
 const ORIGIN_CURRENCIES = ["Tether TRC20"];
 
 async function main() {
-  const exchangers: Exchanger[] = [];
+  const exchangers = new Map<string, Exchanger>();
 
   console.log("Opening browser");
   const browser = await puppeteer.launch({ headless: "new" });
@@ -41,7 +41,16 @@ async function main() {
       originName,
       targetName
     );
-    exchangers.push(...exchangers_);
+    exchangers_.forEach((e) => {
+      if (exchangers.has(e.name)) {
+        const prev = exchangers.get(e.name)!;
+        return exchangers.set(e.name, {
+          ...prev,
+          pairs: [...prev.pairs, ...e.pairs],
+        });
+      }
+      exchangers.set(e.name, e);
+    });
     console.log(
       `Found ${exchangers_.length} exchangers for pair "${originName}" - "${targetName}"`
     );
@@ -54,7 +63,7 @@ async function main() {
     .replace(/:/g, "-");
   await fs.writeFile(
     `./reports/exchangers_${date}.json`,
-    JSON.stringify(exchangers),
+    JSON.stringify(Array.from(exchangers.values())),
     "utf-8"
   );
   await browser.close();

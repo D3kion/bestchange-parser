@@ -1,0 +1,2 @@
+- [ ] Maybe rework contact crawling logic? (crawl all pages, then parse contacts)
+- [ ] Introduce more pptr pages for parallel crawling
