@@ -6,8 +6,10 @@
   "scripts": {
     "start:list": "node dist/apps/list/main.js",
     "start:contacts": "node dist/apps/contacts/main.js",
-    "dev:list": "npm run build && node dist/apps/list/main.js",
-    "dev:contacts": "npm run build && node dist/apps/contacts/main.js",
+    "start:exporter": "node dist/apps/exporter/main.js",
+    "dev:list": "npm run build && npm run start:list",
+    "dev:contacts": "npm run build && npm run start:contacts",
+    "dev:exporter": "npm run build && npm run start:exporter",
     "build": "tsc",
     "lint": "eslint . --ext .ts"
   },
@@ -18,9 +20,10 @@
     "typescript": "~5.2"
   },
   "dependencies": {
-    "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^16.3.1",
+    "google-auth-library": "^9.2.0",
+    "google-spreadsheet": "^4.1.1",
     "puppeteer": "^21.5.2",
-    "ts-retry": "^4.2.4",
-    "type-flag": "^3.0.0"
+    "ts-retry": "^4.2.4"
   }
 }

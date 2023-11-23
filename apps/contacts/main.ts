@@ -1,14 +1,14 @@
+import "dotenv/config";
 import fs from "fs/promises";
-import { getFlag } from "type-flag";
 import { retryAsync } from "ts-retry";
 import puppeteer from "puppeteer";
 
-import { Exchanger } from "../../lib/domain";
+import { readExchangers } from "../../lib/db/exchangers";
 import { findLinksByRegex, parseContactLinks, visitDeeplink } from "./handlers";
 import { CONTACT_PAGE_PATTERNS } from "./patterns";
 
 async function main() {
-  const file = getFlag("-f,--file", String);
+  const file = process.env.REPORT_FILE;
   if (!file) return console.error("File must be specified");
   const exchangers = await readExchangers(file);
   console.log(`Found ${exchangers.length} exchangers`);
@@ -19,7 +19,10 @@ async function main() {
   await page.setViewport({ width: 1360, height: 768 });
 
   for (const item of exchangers) {
-    if (item.url && (item.tgContacts?.length || item.emailContacts?.length)) {
+    if (
+      item.url
+      // && (item.tgContacts?.length || item.emailContacts?.length)
+    ) {
       console.log(`Skiping "${item.name}" exchanger`);
       continue;
     }
@@ -56,14 +59,29 @@ async function main() {
 
       // Iterate over pages and try to find contacts
       for (const link of links) {
-        console.log("Visitng", link);
-        await page.goto(link, { waitUntil: "domcontentloaded" });
-        const [tgLinks, emailLinks] = await parseContactLinks(page);
-        if (tgLinks.length || emailLinks.length) {
-          item.tgContacts = tgLinks;
-          item.emailContacts = emailLinks;
-          break;
-        }
+        console.log("Visiting", link);
+        const found = await retryAsync(
+          async () => {
+            await page.goto(link, {
+              timeout: 10_000,
+              waitUntil: "domcontentloaded",
+            });
+            const [tgLinks, emailLinks] = await parseContactLinks(page);
+            if (tgLinks.length || emailLinks.length) {
+              item.tgContacts = tgLinks;
+              item.emailContacts = emailLinks;
+              return true;
+            }
+            return false;
+          },
+          {
+            maxTry: 3,
+            onError() {
+              console.error("Retrying to visit", link);
+            },
+          }
+        );
+        if (found) break;
       }
     } else {
       item.tgContacts = tgLinks;
@@ -75,16 +93,6 @@ async function main() {
   }
 
   await browser.close();
-}
-
-async function readExchangers(path: string): Promise<Exchanger[]> {
-  try {
-    const dataStr = (await fs.readFile(path, "utf-8")).toString();
-    return JSON.parse(dataStr);
-  } catch (err) {
-    console.error("Couldn't read file:", err);
-  }
-  return [];
 }
 
 main();
