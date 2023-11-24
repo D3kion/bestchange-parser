@@ -1,2 +1,3 @@
-- [ ] Maybe rework contact crawling logic? (crawl all pages, then parse contacts)
+- [ ] Maybe rework contact crawling logic? (crawl all pages, then parse contacts) +
 - [ ] Introduce more pptr pages for parallel crawling
+- [x] Pairs in report + count

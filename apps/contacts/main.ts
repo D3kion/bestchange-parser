@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import { retryAsync } from "ts-retry";
 import puppeteer from "puppeteer";
 
-import { readExchangers } from "../../lib/db/exchangers";
+import { readExchangers } from "../../lib/db";
 import { findLinksByRegex, parseContactLinks, visitDeeplink } from "./handlers";
 import { CONTACT_PAGE_PATTERNS } from "./patterns";
 
@@ -25,29 +25,42 @@ async function main() {
     }
 
     console.log("Entering deeplink for exchanger", item.name, item.deepLink);
-    const url = await retryAsync(
-      async () => visitDeeplink(page, item.deepLink),
-      {
-        delay: 10_000,
-        onError(err) {
-          console.error(
-            "Something went wrong:",
-            err,
-            "\nRetrying to visit deeplink afters 10sec..."
-          );
-        },
-      }
-    );
-    item.url = url;
 
-    const [tgLinks, emailLinks] = await parseContactLinks(page);
-    if (!tgLinks.length && !emailLinks.length) {
+    try {
+      item.url = await retryAsync(
+        async () => visitDeeplink(page, item.deepLink),
+        {
+          maxTry: 3,
+          delay: 10_000,
+          onError(err) {
+            console.error(
+              "Something went wrong:",
+              err,
+              "\nRetrying to visit deeplink afters 10sec..."
+            );
+          },
+        }
+      );
+    } catch (err) {
+      console.log("Couldn't enter deeplink", err);
+      continue;
+    }
+
+    // TODO: find then parse
+    try {
+      const [tgLinks, emailLinks] = await parseContactLinks(page);
+      item.tgContacts = tgLinks;
+      item.emailContacts = emailLinks;
+    } catch (err) {
+      console.log("Couln't parse links", err);
+    }
+    if (!item.tgContacts?.length && !item.emailContacts?.length) {
       console.log("Contacts not found, trying to find contact pages");
-      // Find contact pages
+      // Find contacts pages
       const rawLinks: string[] = [];
       for (const pattern of CONTACT_PAGE_PATTERNS) {
         const links = (await findLinksByRegex(page, pattern, true)).filter(
-          (l) => new URL(l).hostname === new URL(url).hostname
+          (l) => new URL(l).hostname === new URL(item.url!).hostname
         );
         rawLinks.push(...links);
       }
@@ -80,9 +93,6 @@ async function main() {
         );
         if (found) break;
       }
-    } else {
-      item.tgContacts = tgLinks;
-      item.emailContacts = emailLinks;
     }
 
     console.log("Found", item.url, item.tgContacts, item.emailContacts);

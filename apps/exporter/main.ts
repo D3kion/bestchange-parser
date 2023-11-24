@@ -8,7 +8,13 @@ import { Exchanger } from "../../lib/domain";
 import { readExchangers } from "../../lib/db";
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
-const COLUMNS = ["Exchanger", "Pairs", "Site", "Contacts"];
+const COLUMNS = [
+  "Exchanger",
+  "Exchange pairs",
+  "Pairs count",
+  "Site",
+  "Contacts",
+];
 
 async function main() {
   if (
@@ -34,7 +40,12 @@ async function main() {
   sheetTg.setHeaderRow(COLUMNS);
   sheetTg.clearRows();
 
-  const tgExchangers = exchangers.filter((e) => !!e.tgContacts?.length);
+  const tgExchangers = exchangers
+    .map((e) => ({
+      ...e,
+      tgContacts: e.tgContacts?.filter((c) => !c.includes("aml")),
+    }))
+    .filter((e) => !!e.tgContacts?.length);
   for (let i = 0; i < tgExchangers.length; i += 1000) {
     writeChunk(sheetTg, tgExchangers.slice(i, i + 1000));
   }
@@ -46,7 +57,7 @@ async function main() {
 
   const emailExchangers = exchangers.filter((e) => !!e.emailContacts?.length);
   for (let i = 0; i < emailExchangers.length; i += 1000) {
-    writeChunk(sheetEmail, emailExchangers.slice(i, i + 1000));
+    writeChunk(sheetEmail, emailExchangers.slice(i, i + 1000), "email");
   }
 }
 
@@ -58,7 +69,8 @@ function writeChunk(
   sheet.addRows(
     chunk.map((e) => [
       e.name,
-      e.pairs.map((p) => `${p[0]} - ${p[1]}`).join("\n"),
+      e.pairs.map((p) => p[1]).join(", "),
+      e.pairs.length,
       e.url || "",
       (contactField === "tg" ? e.tgContacts : e.emailContacts)?.join("\n") ||
         "",
